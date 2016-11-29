@@ -165,7 +165,7 @@ package object collection extends LowPriority {
 
     def fromIterable[B: ClassTag](coll: Iterable[B]): Array[B] = coll.toArray[B]
 
-    protected[this] def newBuilder = new ArrayBuffer[A].mapResult(_.toArray(elemTag))
+    protected[this] def newBuilder = ArrayBuffer[A]()(elemTag).mapResult(_.toArray(elemTag))
 
     override def knownSize = xs.length
 

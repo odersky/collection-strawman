@@ -27,6 +27,10 @@ trait IterableFactory[+C[X] <: Iterable[X]] extends FromIterable[C] {
 trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
   /** The collection itself */
   protected def coll: this.type = this
+  /** The ClassTag of the elements of this collection. Can be more or less precise than A but not inompatible with it.
+    * For example, an Iterable[Int] can have a ClassTag[Any] if a more precise type was not known at construction
+    * time, and an Iterable[Any] can have a ClassTag[Int] (but only if all elements are really of type Int). */
+  def elementClassTag: ClassTag[_ >: (A @uncheckedVariance)]
 }
 
 /** A trait representing indexable collections with finite length */
@@ -54,6 +58,7 @@ trait LinearSeq[+A] extends Seq[A] with LinearSeqLike[A, LinearSeq] { self =>
     private[this] var current: Seq[A] = self
     def hasNext = !current.isEmpty
     def next = { val r = current.head; current = current.tail; r }
+    def elementClassTag = self.elementClassTag
   }
 
   /** `length is defined in terms of `iterator` */
@@ -74,6 +79,7 @@ trait IndexedSeq[+A] extends Seq[A] { self =>
   override def view: IndexedView[A] = new IndexedView[A] {
     def length: Int = self.length
     def apply(i: Int): A = self(i)
+    def elementClassTag = self.elementClassTag
   }
 }
 
@@ -353,6 +359,8 @@ extends LinearSeq[A]
   }
 
   override def className = "List"
+
+  def elementClassTag = ClassTag.Any // not specialized
 }
 
 case class :: [+A](x: A, private[collection] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
@@ -425,6 +433,8 @@ extends Seq[A]
   def result = this
 
   override def className = "ListBuffer"
+
+  def elementClassTag = ClassTag.Any // not specialized
 }
 
 object ListBuffer extends IterableFactory[ListBuffer] {
@@ -432,31 +442,31 @@ object ListBuffer extends IterableFactory[ListBuffer] {
 }
 
 /** Concrete collection type: ArrayBuffer */
-class ArrayBuffer[A] private (initElems: Array[AnyRef], initLength: Int)
+class ArrayBuffer[@specialized(Int, Long, Double) A] private[collection] (initElems: Array[A], initLength: Int)
 extends Seq[A]
    with SeqLike[A, ArrayBuffer]
    with Buildable[A, ArrayBuffer[A]]
    with Builder[A, ArrayBuffer[A]] {
 
-  def this() = this(new Array[AnyRef](16), 0)
-
-  private var elems: Array[AnyRef] = initElems
+  private[collection] var elems: Array[A] = initElems
   private var start = 0
   private var end = initLength
 
   def apply(n: Int) = elems(start + n).asInstanceOf[A]
 
+  def elementClassTag: ClassTag[A] = ClassTag(elems.getClass.getComponentType)
+
   def length = end - start
   override def knownSize = length
 
-  override def view = new ArrayBufferView(elems, start, end)
+  override def view = new ArrayView(elems, start, end)
 
   def iterator = view.iterator
 
   def fromIterable[B](it: Iterable[B]): ArrayBuffer[B] =
     ArrayBuffer.fromIterable(it)
 
-  protected[this] def newBuilder = new ArrayBuffer[A]
+  protected[this] def newBuilder = ArrayBuffer[A]()(elementClassTag)
 
   def +=(elem: A): this.type = {
     if (end == elems.length) {
@@ -466,12 +476,12 @@ extends Seq[A]
         start = 0
       }
       else {
-        val newelems = new Array[AnyRef](end * 2)
+        val newelems = Array.ofDim[A](end * 2)(elementClassTag)
         Array.copy(elems, 0, newelems, 0, end)
         elems = newelems
       }
     }
-    elems(end) = elem.asInstanceOf[AnyRef]
+    elems(end) = elem
     end += 1
     this
   }
@@ -484,17 +494,17 @@ extends Seq[A]
   /** Overridden to use array copying for efficiency where possible. */
   override def ++[B >: A](xs: IterableOnce[B]): ArrayBuffer[B] = xs match {
     case xs: ArrayBuffer[B] =>
-      val elems = new Array[AnyRef](length + xs.length)
+      val elems = Array.ofDim[B](length + xs.length)(xs.elementClassTag)
       Array.copy(this.elems, this.start, elems, 0, this.length)
       Array.copy(xs.elems, xs.start, elems, this.length, xs.length)
-      new ArrayBuffer(elems, elems.length)
+      ArrayBuffer[B](elems, elems.length)
     case _ => super.++(xs)
   }
 
   override def take(n: Int) = {
-    val elems = new Array[AnyRef](n min length)
+    val elems = Array.ofDim[A](n min length)(elementClassTag)
     Array.copy(this.elems, this.start, elems, 0, elems.length)
-    new ArrayBuffer(elems, elems.length)
+    new ArrayBuffer[A](elems, elems.length)
   }
 
   override def className = "ArrayBuffer"
@@ -503,20 +513,34 @@ extends Seq[A]
 object ArrayBuffer extends IterableFactory[ArrayBuffer] {
 
   /** Avoid reallocation of buffer if length is known. */
-  def fromIterable[B](coll: Iterable[B]): ArrayBuffer[B] =
+  def fromIterable[B](coll: Iterable[B]): ArrayBuffer[B] = {
     if (coll.knownSize >= 0) {
-      val elems = new Array[AnyRef](coll.knownSize)
+      val elems = Array.ofDim[B](coll.knownSize)(coll.elementClassTag.asInstanceOf[ClassTag[B]]) // could use optimisitic respecialization here
       val it = coll.iterator
-      for (i <- 0 until elems.length) elems(i) = it.next().asInstanceOf[AnyRef]
-      new ArrayBuffer[B](elems, elems.length)
+      for (i <- 0 until elems.length) elems(i) = it.next()
+      ArrayBuffer[B](elems, elems.length)
     }
-    else new ArrayBuffer[B] ++= coll
+    else ArrayBuffer[B]()(coll.elementClassTag.asInstanceOf[ClassTag[B]]) ++= coll
+  }
+
+  private def apply[@specialized(Int, Long, Double) A](initElems: Array[A], initLength: Int): ArrayBuffer[A] = {
+    val cl = initElems.getClass.getComponentType
+    if(cl == classOf[Int]) new ArrayBuffer[Int](initElems.asInstanceOf[Array[Int]], initLength).asInstanceOf[ArrayBuffer[A]]
+    else if(cl == classOf[Long]) new ArrayBuffer[Long](initElems.asInstanceOf[Array[Long]], initLength).asInstanceOf[ArrayBuffer[A]]
+    else if(cl == classOf[Double]) new ArrayBuffer[Double](initElems.asInstanceOf[Array[Double]], initLength).asInstanceOf[ArrayBuffer[A]]
+    else new ArrayBuffer(initElems, initLength)
+  }
+
+  // This is specialized but `empty` is not
+  def apply[@specialized(Int, Long, Double) A]()(implicit ct: ClassTag[A]): ArrayBuffer[A] = apply(Array.ofDim(16), 0)
 }
 
-class ArrayBufferView[A](val elems: Array[AnyRef], val start: Int, val end: Int) extends IndexedView[A] {
+class ArrayView[@specialized(Int, Long, Double) A](val elems: Array[A], val start: Int, val end: Int) extends IndexedView[A] {
+  def this(elems: Array[A]) = this(elems, 0, elems.length)
   def length = end - start
-  def apply(n: Int) = elems(start + n).asInstanceOf[A]
-  override def className = "ArrayBufferView"
+  def apply(n: Int) = elems(start + n)
+  override def className = "ArrayView"
+  def elementClassTag: ClassTag[A] = ClassTag(elems.getClass.getComponentType)
 }
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
@@ -549,6 +573,8 @@ extends LinearSeq[A] with SeqLike[A, LazyList] {
         case Some((hd, tl)) => s"$hd #:: $tl"
       }
     else "LazyList(?)"
+
+  def elementClassTag = ClassTag.Any // not specialized
 }
 
 object LazyList extends IterableFactory[LazyList] {
@@ -589,18 +615,16 @@ case class StringView(s: String) extends IndexedView[Char] {
   def length = s.length
   def apply(n: Int) = s.charAt(n)
   override def className = "StringView"
-}
-
-case class ArrayView[A](xs: Array[A]) extends IndexedView[A] {
-  def length = xs.length
-  def apply(n: Int) = xs(n)
-  override def className = "ArrayView"
+  def elementClassTag: ClassTag[Char] = ClassTag.Char
 }
 
 /* ---------- Iterators ---------------------------------------------------*/
 
 /** A core Iterator class */
 trait Iterator[+A] extends IterableOnce[A] { self =>
+  // Iterator is not specialized.
+  // TODO: Add IntIterator/LongIterator/DoubleIterator. This approach should be compatible with
+  // Java 8's manually specialized iterators and streams.
   def hasNext: Boolean
   def next(): A
   def iterator = this
@@ -704,5 +728,6 @@ object Iterator {
   def apply[A](xs: A*): Iterator[A] = new IndexedView[A] {
     val length = xs.length
     def apply(n: Int) = xs(n)
+    def elementClassTag = ClassTag.Any // not specialized -- Iterator doesn't care anyway
   }.iterator
 }
