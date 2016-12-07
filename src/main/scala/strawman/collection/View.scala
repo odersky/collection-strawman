@@ -86,9 +86,10 @@ object View {
   case class Map[A, B](underlying: Iterable[A], f: A => B) extends View[B] {
     def iterator = underlying.iterator.map(f)
     override def knownSize = underlying.knownSize
-    def elementClassTag = ClassTag.Any // not specialized
-    // TODO: We could specialize based on the @specialized subclass of Function1
-    // but any operation would still go through the unspecialized iterator
+
+    // The target collection can be specialized based on the function type
+    // but any operation will still go through the unspecialized iterator
+    def elementClassTag = SpecializationUtil.getSpecializedReturnType(f).asInstanceOf[ClassTag[_ >: B]]
   }
 
   /** A view that flatmaps elements of the underlying collection. */
