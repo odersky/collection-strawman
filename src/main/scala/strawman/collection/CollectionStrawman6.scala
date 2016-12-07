@@ -1,5 +1,7 @@
 package strawman.collection
 
+import java.util.PrimitiveIterator
+
 import Predef.{augmentString => _, wrapString => _, _}
 import scala.reflect.ClassTag
 import annotation.unchecked.uncheckedVariance
@@ -31,6 +33,28 @@ trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
     * For example, an Iterable[Int] can have a ClassTag[Any] if a more precise type was not known at construction
     * time, and an Iterable[Any] can have a ClassTag[Int] (but only if all elements are really of type Int). */
   def elementClassTag: ClassTag[_ >: (A @uncheckedVariance)]
+
+  /** Get a specialized iterator. The default implementation simply boxes and unboxes as necessary. It should
+    * be overridden in subclasses with primitive data representations. */
+  def specializedIterator(implicit spec: Specialized[A @uncheckedVariance]): spec.Iterator = {
+    val it = iterator
+    if(spec == Specialized.specializedInt) {
+      new PrimitiveIterator.OfInt {
+        override def nextInt(): Int = it.next().asInstanceOf[Int]
+        override def hasNext: Boolean = it.hasNext
+      }
+    } else if(spec == Specialized.specializedLong) {
+      new PrimitiveIterator.OfLong {
+        override def nextLong(): Long = it.next().asInstanceOf[Long]
+        override def hasNext: Boolean = it.hasNext
+      }
+    } else if(spec == Specialized.specializedDouble) {
+      new PrimitiveIterator.OfDouble {
+        override def nextDouble(): Double = it.next().asInstanceOf[Double]
+        override def hasNext: Boolean = it.hasNext
+      }
+    } else it
+  }.asInstanceOf[spec.Iterator]
 }
 
 /** A trait representing indexable collections with finite length */
@@ -462,6 +486,8 @@ extends Seq[A]
   override def view = new ArrayView(elems, start, end)
 
   def iterator = view.iterator
+  override def specializedIterator(implicit spec: Specialized[A @uncheckedVariance]): spec.Iterator =
+    view.specializedIterator
 
   def fromIterable[B](it: Iterable[B]): ArrayBuffer[B] =
     ArrayBuffer.fromIterable(it)
@@ -535,12 +561,44 @@ object ArrayBuffer extends IterableFactory[ArrayBuffer] {
   def apply[@specialized(Int, Long, Double) A]()(implicit ct: ClassTag[A]): ArrayBuffer[A] = apply(Array.ofDim(16), 0)
 }
 
-class ArrayView[@specialized(Int, Long, Double) A](val elems: Array[A], val start: Int, val end: Int) extends IndexedView[A] {
+class ArrayView[@specialized(Int, Long, Double) A](val elems: Array[A], val start: Int, val end: Int) extends IndexedView[A] { self =>
   def this(elems: Array[A]) = this(elems, 0, elems.length)
   def length = end - start
   def apply(n: Int) = elems(start + n)
   override def className = "ArrayView"
   def elementClassTag: ClassTag[A] = ClassTag(elems.getClass.getComponentType)
+
+  override def specializedIterator(implicit spec: Specialized[A @uncheckedVariance]): spec.Iterator = {
+    elementClassTag.runtimeClass match {
+      case java.lang.Integer.TYPE =>
+        val intElems = elems.asInstanceOf[Array[Int]]
+        def it: PrimitiveIterator.OfInt = new PrimitiveIterator.OfInt {
+          private var current = 0
+          def hasNext = current < self.length
+          def nextInt(): Int = {
+            val r = intElems(start + current)
+            current += 1
+            r
+          }
+        }
+        if(spec == Specialized.specializedInt) {
+          it
+        } else if(spec == Specialized.specializedLong) {
+          new PrimitiveIterator.OfLong {
+            override def nextLong(): Long = it.nextInt()
+            override def hasNext: Boolean = it.hasNext
+          }
+        } else if(spec == Specialized.specializedDouble) {
+          new PrimitiveIterator.OfDouble {
+            override def nextDouble(): Double = it.nextInt()
+            override def hasNext: Boolean = it.hasNext
+          }
+        } else super.specializedIterator(spec)
+      //TODO case java.lang.Integer.LONG =>
+      //TODO case java.lang.Integer.DOUBLE =>
+      case _ => super.specializedIterator(spec)
+    }
+  }.asInstanceOf[spec.Iterator]
 }
 
 class LazyList[+A](expr: => LazyList.Evaluated[A])
@@ -730,4 +788,22 @@ object Iterator {
     def apply(n: Int) = xs(n)
     def elementClassTag = ClassTag.Any // not specialized -- Iterator doesn't care anyway
   }.iterator
+}
+
+sealed trait Specialized[E] {
+  type Iterator
+}
+
+object Specialized extends SpecializedLowPriority {
+  // Using Java's PrimitiveIterator here for simplicity's sake
+  implicit val specializedInt: Specialized[Int] { type Iterator = PrimitiveIterator.OfInt } = null
+  implicit val specializedLong: Specialized[Long] { type Iterator = PrimitiveIterator.OfLong } = null
+  implicit val specializedDouble: Specialized[Double] { type Iterator = PrimitiveIterator.OfDouble } = null
+  /*implicit case object SpecializedInt extends Specialized[Int] { type Iterator = PrimitiveIterator.OfInt }
+  implicit case object SpecializedLong extends Specialized[Long] { type Iterator = PrimitiveIterator.OfLong }
+  implicit case object SpecializedDouble extends Specialized[Double] { type Iterator = PrimitiveIterator.OfDouble }*/
+}
+
+trait SpecializedLowPriority {
+  implicit def notSpecialized[E]: Specialized[E] { type Iterator = strawman.collection.Iterator[E] } = null
 }
