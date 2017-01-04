@@ -2,10 +2,12 @@ package strawman.collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.reflect.ClassTag
-import scala.{Int, Boolean, Array, Any, Unit, StringContext}
+import scala.{Any, Array, Boolean, Int, StringContext, Unit}
 import java.lang.String
 
-import strawman.collection.mutable.{ArrayBuffer, StringBuilder}
+import strawman.collection.mutable.{ArrayBuffer, Iterator, StringBuilder}
+
+import scala.util.hashing.MurmurHash3
 
 /** Base trait for generic collections */
 trait Iterable[+A] extends IterableOnce[A] with IterableLike[A, Iterable] {
@@ -52,7 +54,7 @@ trait IterableFactory[+C[X] <: Iterable[X]] extends FromIterable[C] {
   */
 trait IterableOps[+A] extends Any {
   protected def coll: Iterable[A]
-  private def iterator() = coll.iterator()
+  private def iterator(): Iterator[A] = coll.iterator()
 
   /** Apply `f` to each element for tis side effects */
   def foreach(f: A => Unit): Unit = iterator().foreach(f)
@@ -132,6 +134,42 @@ trait IterableOps[+A] extends Any {
   }
 
   override def toString = s"$className(${mkString(", ")})"
+
+  def sameElements[B >: A](that: Iterable[B]): Boolean = {
+  val these = this.iterator()
+  val those = that.iterator()
+  while (these.hasNext && those.hasNext)
+    if (these.next() != those.next())
+      return false
+    !these.hasNext && !those.hasNext
+  }
+
+  override def equals(o: scala.Any): Boolean =
+    o match {
+      case iterable: Iterable[A] => sameElements(iterable)
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    IterableUtils.orderedHash(coll, IterableUtils.iterableSeed)
+
+}
+
+// Temporary: TODO move to MurmurHash3.scala
+object IterableUtils {
+
+  val iterableSeed: Int = "Iterable".##
+
+  final def orderedHash(xs: Iterable[_], seed: Int): Int = {
+    var n = 0
+    var h = seed
+    xs foreach { x =>
+      h = MurmurHash3.mix(h, x.##)
+      n += 1
+    }
+    MurmurHash3.finalizeHash(h, n)
+  }
+
 }
 
 /** Type-preserving transforms over iterables.
