@@ -136,12 +136,14 @@ trait IterableOps[+A] extends Any {
   override def toString = s"$className(${mkString(", ")})"
 
   def sameElements[B >: A](that: Iterable[B]): Boolean = {
-  val these = this.iterator()
-  val those = that.iterator()
-  while (these.hasNext && those.hasNext)
-    if (these.next() != those.next())
-      return false
-    !these.hasNext && !those.hasNext
+    val these = this.iterator()
+    val those = that.iterator()
+    while (these.hasNext && those.hasNext)
+      if (these.next() != those.next())
+        return false
+    // At that point we know that *at least one* iterator has no next element
+    // If *both* of them have no elements then the collections are the same
+    these.hasNext == those.hasNext
   }
 
   override def equals(o: scala.Any): Boolean =
