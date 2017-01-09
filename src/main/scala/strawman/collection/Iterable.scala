@@ -165,8 +165,9 @@ object IterableUtils {
   final def orderedHash(xs: Iterable[_], seed: Int): Int = {
     var n = 0
     var h = seed
-    xs foreach { x =>
-      h = MurmurHash3.mix(h, x.##)
+    val it = xs.iterator()
+    while (it.hasNext) {
+      h = MurmurHash3.mix(h, it.next().##)
       n += 1
     }
     MurmurHash3.finalizeHash(h, n)
