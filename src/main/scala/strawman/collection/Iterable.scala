@@ -56,7 +56,7 @@ trait IterableOps[+A] extends Any {
   private def iterator() = coll.iterator()
 
   /** Apply `f` to each element for tis side effects
-   *  Note: [U] parameter needed to help scalac's type inference. 
+   *  Note: [U] parameter needed to help scalac's type inference.
    */
   def foreach[U](f: A => U): Unit = iterator().foreach(f)
 
@@ -189,5 +189,25 @@ trait IterablePolyTransforms[+A, +C[A]] extends Any {
 
   /** Zip. Interesting because it requires to align to source collections. */
   def zip[B](xs: IterableOnce[B]): C[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
+  // sound bcs of VarianceNote
+}
+
+trait TagGuidedPolyTransforms[+A, +C[A]] extends Any {
+  import scala.reflect.ClassTag
+
+  protected def coll: Iterable[A]
+  def fromIterable[B: ClassTag](coll: Iterable[B]): C[B]
+
+  /** Map */
+  def map[B: ClassTag](f: A => B): C[B] = fromIterable(View.Map(coll, f))
+
+  /** Flatmap */
+  def flatMap[B: ClassTag](f: A => IterableOnce[B]): C[B] = fromIterable(View.FlatMap(coll, f))
+
+  /** Concatenation */
+  def ++[B >: A : ClassTag](xs: IterableOnce[B]): C[B] = fromIterable(View.Concat(coll, xs))
+
+  /** Zip. Interesting because it requires to align to source collections. */
+  def zip[B: ClassTag](xs: IterableOnce[B]): C[(A @uncheckedVariance, B)] = fromIterable(View.Zip(coll, xs))
   // sound bcs of VarianceNote
 }

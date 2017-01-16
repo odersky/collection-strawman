@@ -3,6 +3,10 @@ package strawman
 import scala.{AnyVal, Array, Char, Int, Unit}
 import scala.Predef.String
 import scala.reflect.ClassTag
+import scala.language.implicitConversions
+import strawman.collection.mutable.{ArrayOps, ArrayView}
+import strawman.collection.immutable.{StringOps, StringView}
+import strawman.collection.immutable
 
 /** A strawman architecture for new collections. It contains some
  *  example collection classes and methods with the intent to expose
@@ -82,14 +86,18 @@ import scala.reflect.ClassTag
  *         map, flatMap, ++, zip
  */
 package object collection extends LowPriority {
-  import scala.language.implicitConversions
+
   // ------------------ Decorators to add collection ops to existing types -----------------------
 
   /** Decorator to add collection operations to strings. */
   implicit def stringToStringOps(s: String): StringOps = new StringOps(s)
 
-  /** Decorator to add collection operations to arrays. */
+  /** Decorator to add collection operations to arrays.
+   *  Note: should be specialized for efficiency.
+   */
   implicit def arrayToArrayOps[A](as: Array[A]): ArrayOps[A] = new ArrayOps[A](as)
+
+  implicit def immutableArrayToArrayOps[A](as: immutable.Array[A]): immutable.ArrayOps[A] = new immutable.ArrayOps[A](as)
 
   implicit class toNewIterator[A](val it: scala.Iterator[A]) extends AnyVal {
     def toStrawman = new strawman.collection.Iterator[A] {
@@ -117,11 +125,12 @@ package object collection extends LowPriority {
 }
 
 class LowPriority {
-  import scala.language.implicitConversions
-  import strawman.collection._
 
   /** Convert array to iterable via view. Lower priority than ArrayOps */
   implicit def arrayToView[T](xs: Array[T]): ArrayView[T] = new ArrayView[T](xs)
+
+  /** Convert immutable array to iterable via view. Lower priority than ArrayOps */
+  implicit def immutableArrayToView[T](xs: immutable.Array[T]): immutable.ArrayView[T] = new immutable.ArrayView[T](xs)
 
   /** Convert string to iterable via view. Lower priority than StringOps */
   implicit def stringToView(s: String): StringView = new StringView(s)
