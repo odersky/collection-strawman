@@ -31,7 +31,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, C
     sortedMapFromIterable(View.FlatMap(coll, f))
 
   def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] =
-    flatMap { (kv: (K, V)) =>
+    flatMap { kv =>
       if (pf.isDefinedAt(kv)) View.Single(pf(kv))
       else View.Empty
     }
