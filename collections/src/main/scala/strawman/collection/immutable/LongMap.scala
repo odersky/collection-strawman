@@ -14,7 +14,7 @@ import java.lang.IllegalStateException
 import strawman.collection.generic.BitOperations
 import strawman.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
 import scala.annotation.tailrec
-import scala.annotation.tailrec
+import annotation.unchecked.uncheckedVariance
 
 /** Utility class for long maps.
   *  @author David MacIver
@@ -161,14 +161,14 @@ sealed abstract class LongMap[+T] extends Map[Long, T]
   with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]]
   with Serializable {
 
-  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Long, T)]): LongMap[T] = {
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Long, T)] @uncheckedVariance): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
     val b = newSpecificBuilder()
     b.sizeHint(coll)
     b.addAll(coll)
     b.result()
   }
-  override protected[this] def newSpecificBuilder(): Builder[(Long, T), LongMap[T]] =
+  override protected[this] def newSpecificBuilder(): Builder[(Long, T), LongMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Long, T), LongMap[T]](empty) {
       def addOne(elem: (Long, T)): this.type = { elems = elems + elem; this }
     }

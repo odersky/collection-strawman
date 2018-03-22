@@ -14,19 +14,19 @@ trait SortedMap[K, +V]
 
   def unsorted: Map[K, V] = this
 
-  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): SortedMapCC[K, V] = sortedMapFactory.from(coll)
-  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), SortedMapCC[K, V]] = sortedMapFactory.newBuilder[K, V]()
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), SortedMapCC[K, V]] @uncheckedVariance = sortedMapFactory.newBuilder[K, V]()
 
   def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
-  override def empty: SortedMapCC[K, V] = sortedMapFactory.empty
+  override def empty: SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.empty
 }
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends MapOps[K, V, Map, C]
      with SortedOps[K, C] {
 
-  protected[this] type SortedMapCC[K, V] = CC[K, V]
+  protected[this] type SortedMapCC[K, V] = CC[K, V] @uncheckedVariance
 
   def sortedMapFactory: SortedMapFactory[SortedMapCC]
 

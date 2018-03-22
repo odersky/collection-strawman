@@ -5,6 +5,7 @@ import strawman.collection.mutable.Builder
 
 import scala.{Array, Boolean, Int, Long, Option, Ordering, Unit, `inline`}
 import scala.Predef.{assert, intWrapper}
+import annotation.unchecked.uncheckedVariance
 
 /** Base type of bitsets.
   *
@@ -37,7 +38,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def bitSetFactory: SpecificIterableFactory[Int, BitSetC]
 
-  protected[this] type BitSetC = C
+  protected[this] type BitSetC = C @uncheckedVariance
 
   final def ordering: Ordering[Int] = Ordering.Int
 

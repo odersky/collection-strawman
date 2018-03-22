@@ -7,8 +7,8 @@ import scala.annotation.unchecked.uncheckedVariance
 trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] {
   def unsorted: Set[A] = this
 
-  override protected[this] def fromSpecificIterable(coll: Iterable[A]): SortedIterableCC[A] = sortedIterableFactory.from(coll)
-  override protected[this] def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] = sortedIterableFactory.newBuilder[A]()
+  override protected[this] def fromSpecificIterable(coll: Iterable[A] @uncheckedVariance): SortedIterableCC[A] @uncheckedVariance = sortedIterableFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[A, SortedIterableCC[A]] @uncheckedVariance = sortedIterableFactory.newBuilder[A]()
 
   def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
 
@@ -19,7 +19,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 
-  protected[this] type SortedIterableCC[X] = CC[X]
+  protected[this] type SortedIterableCC[X] = CC[X] @uncheckedVariance
 
   def sortedIterableFactory: SortedIterableFactory[SortedIterableCC]
 

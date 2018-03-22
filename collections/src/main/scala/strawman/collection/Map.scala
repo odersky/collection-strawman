@@ -15,12 +15,12 @@ trait Map[K, +V]
     with MapOps[K, V, Map, Map[K, V]]
     with Equals {
 
-  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)]): MapCC[K, V] = mapFactory.from(coll)
-  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), MapCC[K, V]] = mapFactory.newBuilder[K, V]()
+  override protected[this] def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
+  override protected[this] def newSpecificBuilder(): mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]()
 
   def mapFactory: strawman.collection.MapFactory[MapCC] = Map
 
-  def empty: MapCC[K, V] = mapFactory.empty
+  def empty: MapCC[K, V] @uncheckedVariance = mapFactory.empty
 
   def canEqual(that: Any): Boolean = true
 
@@ -62,7 +62,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   override def view: MapView[K, V] = new MapView.Id(this)
 
-  protected[this] type MapCC[K, V] = CC[K, V]
+  protected[this] type MapCC[K, V] = CC[K, V] @uncheckedVariance
 
   /** Similar to `fromIterable`, but returns a Map collection type.
     * Note that the return type is now `CC[K2, V2]` aka `MapCC[K2, V2]` rather than `IterableCC[(K2, V2)]`.

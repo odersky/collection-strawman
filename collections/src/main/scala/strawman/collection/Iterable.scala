@@ -7,6 +7,7 @@ import scala.reflect.ClassTag
 import scala.{Any, AnyRef, Array, Boolean, Either, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1, deprecatedOverriding}
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
+import annotation.unchecked.uncheckedVariance
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import java.lang.String
@@ -26,8 +27,8 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   //TODO scalac generates an override for this in AbstractMap; Making it final leads to a VerifyError
   protected[this] def coll: this.type = this
 
-  protected[this] def fromSpecificIterable(coll: Iterable[A]): IterableCC[A] = iterableFactory.from(coll)
-  protected[this] def newSpecificBuilder(): Builder[A, IterableCC[A]] = iterableFactory.newBuilder[A]()
+  protected[this] def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
+  protected[this] def newSpecificBuilder(): Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]()
 
   def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
@@ -68,7 +69,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   */
 trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
 
-  protected[this] type IterableCC[X] = CC[X]
+  protected[this] type IterableCC[X] = CC[X] @uncheckedVariance
 
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
@@ -87,7 +88,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * the elements of the resulting collections). In other words, this methods defines
     * the evaluation model of the collection.
     */
-  protected[this] def fromSpecificIterable(coll: Iterable[A]): C
+  protected[this] def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): C
 
   /** Similar to `fromSpecificIterable`, but for a (possibly) different type of element.
     * Note that the return type is now `CC[E]`.
@@ -107,7 +108,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * As a consequence, operations should preferably be implemented with `fromSpecificIterable`
     * instead of this method.
     */
-  protected[this] def newSpecificBuilder(): Builder[A, C]
+  protected[this] def newSpecificBuilder(): Builder[A @uncheckedVariance, C]
 
   /** Selects the first element of this $coll.
     *  $orderDependent
@@ -326,7 +327,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   class WithFilter(p: A => Boolean) extends collection.WithFilter[A, CC] {
 
-    protected[this] def filtered = new View.Filter(IterableOps.this, p, isFlipped = false)
+    protected[this] def filtered: View.Filter[A @uncheckedVariance] = new View.Filter(IterableOps.this, p, isFlipped = false)
 
     def map[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(filtered, f))
 

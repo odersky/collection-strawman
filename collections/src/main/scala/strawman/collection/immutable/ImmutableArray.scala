@@ -26,7 +26,7 @@ sealed abstract class ImmutableArray[+A]
     with StrictOptimizedSeqOps[A, ImmutableArray, ImmutableArray[A]] {
 
   /** The tag of the element type */
-  protected[this] def elemTag: ClassTag[A]
+  protected[this] def elemTag: ClassTag[A] @uncheckedVariance
 
   override def iterableFactory: SeqFactory[ImmutableArray] = ImmutableArray.untagged
 
@@ -36,9 +36,9 @@ sealed abstract class ImmutableArray[+A]
   // uncheckedVariance should be safe: Array[A] for reference types A is covariant at the JVM level. Array[A] for
   // primitive types A can only be widened to Array[Any] which erases to Object.
 
-  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A]): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[A] @uncheckedVariance): ImmutableArray[A] = ImmutableArray.from[A](coll)(elemTag)
 
-  override protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] = ImmutableArray.newBuilder[A]()(elemTag)
+  override protected[this] def newSpecificBuilder(): Builder[A, ImmutableArray[A]] @uncheckedVariance = ImmutableArray.newBuilder[A]()(elemTag)
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A

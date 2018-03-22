@@ -6,6 +6,7 @@ import strawman.collection.mutable.Builder
 
 import scala.{Any, Boolean, `inline`, Int, None, NoSuchElementException, Nothing, Option, Some, Serializable, SerialVersionUID, Unit}
 import scala.Predef.<:<
+import annotation.unchecked.uncheckedVariance
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
@@ -152,10 +153,10 @@ object Map extends MapFactory[Map] {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected[this] def fromSpecificIterable(coll: collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
-    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
+    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
       Map.newBuilder().mapResult((p: Map[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 

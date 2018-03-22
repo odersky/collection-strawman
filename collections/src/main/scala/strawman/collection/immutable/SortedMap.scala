@@ -4,6 +4,7 @@ package immutable
 
 import strawman.collection.mutable.Builder
 import scala.{Option, Ordering, `inline`, Serializable, SerialVersionUID}
+import annotation.unchecked.uncheckedVariance
 
 trait SortedMap[K, +V]
   extends Map[K, V]
@@ -96,10 +97,10 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
 
-    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] =
+    override protected[this] def newSpecificBuilder(): Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
       SortedMap.newBuilder().mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 }

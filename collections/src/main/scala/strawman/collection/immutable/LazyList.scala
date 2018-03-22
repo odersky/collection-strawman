@@ -231,7 +231,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
 
   def tail: C
 
-  protected[this] def cons[T](hd: => T, tl: => CC[T]): CC[T]
+  protected[this] def cons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
 
   /** Forces evaluation of the whole `LazyList` and returns it.
     *
@@ -466,7 +466,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
 
 sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]]] extends SeqFactory[CC] {
 
-  protected[this] def newCons[T](hd: => T, tl: => CC[T]): CC[T]
+  protected[this] def newCons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
 
   private[immutable] def withFilter[A](l: CC[A] @uncheckedVariance, p: A => Boolean): collection.WithFilter[A, CC] =
     new WithFilter[A](l, p)

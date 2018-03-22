@@ -15,6 +15,7 @@ import strawman.collection
 import strawman.collection.generic.BitOperations
 import strawman.collection.mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 
 /** Utility class for integer maps.
   *  @author David MacIver
@@ -169,7 +170,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
   with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]]
   with Serializable {
 
-  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Int, T)]): IntMap[T] =
+  override protected[this] def fromSpecificIterable(coll: strawman.collection.Iterable[(Int, T) @uncheckedVariance]): IntMap[T] =
     intMapFromIterable[T](coll)
   protected[this] def intMapFromIterable[V2](coll: strawman.collection.Iterable[(Int, V2)]): IntMap[V2] = {
     val b = IntMap.newBuilder[V2]()
@@ -177,7 +178,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T]
     b.addAll(coll)
     b.result()
   }
-  override protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] =
+  override protected[this] def newSpecificBuilder(): Builder[(Int, T), IntMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
       def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
     }
