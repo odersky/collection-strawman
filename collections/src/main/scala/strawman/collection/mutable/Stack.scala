@@ -33,6 +33,10 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
 
   override def iterableFactory: SeqFactory[Stack] = Stack
 
+  override def grouped(n: Int) = super[IndexedSeqOps].grouped(n)
+  override def reverse = super[IndexedSeqOps].reverse
+  override def sliding(window: Int, step: Int) = super[IndexedSeqOps].sliding(window, step)
+
   /**
     * Add elements to the top of this stack
     *
