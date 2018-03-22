@@ -4,7 +4,7 @@ package immutable
 
 import strawman.collection.mutable.Builder
 import scala.{Option, Ordering, `inline`, Serializable, SerialVersionUID}
-import annotation.unchecked.uncheckedVariance
+import scala.annotation.unchecked.uncheckedVariance
 
 trait SortedMap[K, +V]
   extends Map[K, V]

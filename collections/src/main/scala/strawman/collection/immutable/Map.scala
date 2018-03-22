@@ -6,7 +6,7 @@ import strawman.collection.mutable.Builder
 
 import scala.{Any, Boolean, `inline`, Int, None, NoSuchElementException, Nothing, Option, Some, Serializable, SerialVersionUID, Unit}
 import scala.Predef.<:<
-import annotation.unchecked.uncheckedVariance
+import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of immutable Maps */
 trait Map[K, +V]

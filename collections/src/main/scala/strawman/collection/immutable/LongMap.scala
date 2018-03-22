@@ -14,7 +14,7 @@ import java.lang.IllegalStateException
 import strawman.collection.generic.BitOperations
 import strawman.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
 import scala.annotation.tailrec
-import annotation.unchecked.uncheckedVariance
+import scala.annotation.unchecked.uncheckedVariance
 
 /** Utility class for long maps.
   *  @author David MacIver

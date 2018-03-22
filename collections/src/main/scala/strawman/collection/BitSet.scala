@@ -5,7 +5,7 @@ import strawman.collection.mutable.Builder
 
 import scala.{Array, Boolean, Int, Long, Option, Ordering, Unit, `inline`}
 import scala.Predef.{assert, intWrapper}
-import annotation.unchecked.uncheckedVariance
+import scala.annotation.unchecked.uncheckedVariance
 
 /** Base type of bitsets.
   *

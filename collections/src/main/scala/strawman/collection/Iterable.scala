@@ -7,7 +7,7 @@ import scala.reflect.ClassTag
 import scala.{Any, AnyRef, Array, Boolean, Either, `inline`, Int, None, Numeric, Option, Ordering, PartialFunction, StringContext, Some, Unit, deprecated, IllegalArgumentException, Function1, deprecatedOverriding}
 import java.lang.{String, UnsupportedOperationException}
 import scala.Predef.<:<
-import annotation.unchecked.uncheckedVariance
+import scala.annotation.unchecked.uncheckedVariance
 
 import strawman.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
 import java.lang.String
