@@ -64,7 +64,7 @@ trait SortedMultiSetOps[A, +CC[X] <: MultiSet[X], +C <: MultiSet[A]]
 
   override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(p)
 
-  type SortedWithFilter = Withfilter
+  type SortedWithFilter = WithFilter
 
 /*
   /** Specialize `WithFilter` for sorted collections
