@@ -213,19 +213,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   override def withFilter(p: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(p)
 
-  /** Specializes `WithFilter` for Map collection types
-    *
-    * @define coll map collection
-    */
-  class MapWithFilter(p: ((K, V)) => Boolean) extends WithFilter(p) {
-
-    def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(new View.Map(filtered, f))
-
-    def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFactory.from(new View.FlatMap(filtered, f))
-
-    override def withFilter(q: ((K, V)) => Boolean): MapWithFilter = new MapWithFilter(kv => p(kv) && q(kv))
-
-  }
+  type MapWithFilter = WithFilter
 
   /** Builds a new map by applying a function to all elements of this $coll.
     *

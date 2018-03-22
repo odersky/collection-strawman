@@ -119,6 +119,8 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 
   override def withFilter(p: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(p)
 
+  type SortedMapWithFilter = MapWithFilter
+/*
   /** Specializes `MapWithFilter` for sorted Map collections
     *
     * @define coll sorted map collection
@@ -134,7 +136,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     override def withFilter(q: ((K, V)) => Boolean): SortedMapWithFilter = new SortedMapWithFilter(kv => p(kv) && q(kv))
 
   }
-
+*/
   // And finally, we add new overloads taking an ordering
   /** Builds a new sorted map by applying a function to all elements of this $coll.
     *

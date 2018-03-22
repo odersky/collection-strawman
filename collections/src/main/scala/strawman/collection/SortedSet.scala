@@ -68,6 +68,9 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
 
   override def withFilter(p: A => Boolean): SortedWithFilter = new SortedWithFilter(p)
 
+  type SortedWithFilter = WithFilter
+
+/*
   /** Specialize `WithFilter` for sorted collections
     *
     * @define coll sorted collection
@@ -79,8 +82,8 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     def flatMap[B : Ordering](f: A => IterableOnce[B]): CC[B] = sortedIterableFactory.from(new View.FlatMap(filtered, f))
 
     override def withFilter(q: A => Boolean): SortedWithFilter = new SortedWithFilter(a => p(a) && q(a))
-
   }
+*/
 
   /** Builds a new sorted collection by applying a function to all elements of this $coll.
     *
